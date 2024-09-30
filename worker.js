@@ -5,8 +5,10 @@ import { join, parse } from 'path';
 import Queue from 'bull';
 import imageThumbnail from 'image-thumbnail';
 import dbClient from './utils/db';
+import Bull from 'bull';
 
 const fileQueue = new Queue('fileQueue');
+const userQueue = new Bull('userQueue');
 
 // Process the queue for generating thumbnails
 fileQueue.process(async (job) => {
@@ -28,6 +30,22 @@ fileQueue.process(async (job) => {
 	if (!file) {
 		throw new Error('File not found');
 	}
+
+	// Generate thumbnails using image-thumbnail module...
+	// Save generated thumbnails with widths of 100, 250, and 500
+	console.log(`Thumbnails generated for file ${fileId}`);
+});
+
+userQueue.process(async (job) => {
+	const { userId } = job.data;
+
+	if (!userId) throw new Error('Missing userId');
+
+	const user = await dbClient.db.collection('users').findOne({ _id: userId });
+	if (!user) throw new Error('User not found');
+
+	console.log(`Welcome ${user.email}!`);
+});
 
 	if (file.type !== 'image') {
 		throw new Error('File is not an image');

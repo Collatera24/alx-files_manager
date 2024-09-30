@@ -4,8 +4,11 @@ import { v4 as uuidv4 } from 'uuid';
 import sha1 from 'sha1';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
+import Bull from 'bull';
 
-class UsersController {
+const userQueue = new Bull('userQueue');
+
+export default class UsersController {
 	static async postNew(req, res) {
 		const { email, password } = req.body;
 
@@ -25,42 +28,14 @@ class UsersController {
 		}
 
 		const hashedPassword = sha1(password);
-		const newUser = {
-			email,
-			password: hashedPassword,
-		};
+		const userId = uuidv4();
+		const newUser = { _id: userId, email, password: hashedPassword };
 
-		try {
-			const result = await usersCollection.insertOne(newUser);
-			res.status(201).json({ id: result.insertedId, email: newUser.email });
-		} catch (error) {
-			res.status(500).json({ error: 'Internal server error' });
-		}
-	}
+		await usersCollection.insertOne(newUser);
 
-	static async getMe(req, res) {
-		const token = req.header('X-Token');
+		// Add job to userQueue for sending a welcome email
+		userQueue.add({ userId });
 
-		if (!token) {
-			return res.status(401).json({ error: 'Unauthorized' });
-		}
-
-		const tokenKey = `auth_${token}`;
-		const userId = await redisClient.get(tokenKey);
-
-		if (!userId) {
-			return res.status(401).json({ error: 'Unauthorized' });
-		}
-
-		const usersCollection = dbClient.db.collection('users');
-		const user = await usersCollection.findOne({ _id: dbClient.client.s.options.objectId(userId) });
-
-		if (!user) {
-			return res.status(401).json({ error: 'Unauthorized' });
-		}
-
-		return res.status(200).json({ id: user._id, email: user.email });
+		return res.status(201).json({ id: userId, email });
 	}
 }
-
-export default UsersController;
