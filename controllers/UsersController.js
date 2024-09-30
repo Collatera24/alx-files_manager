@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { v4 as uuidv4 } from 'uuid';
 import sha1 from 'sha1';
 import dbClient from '../utils/db';

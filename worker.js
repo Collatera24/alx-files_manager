@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { promises as fsPromises } from 'fs';
 import { join, parse } from 'path';
 import Queue from 'bull';

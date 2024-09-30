@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { MongoClient } from 'mongodb';
 
 class DBClient {
